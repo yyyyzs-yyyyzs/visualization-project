@@ -9,6 +9,7 @@ import { useEconomicData } from '../../hooks/useEconomicData';
 import { useAutoPlayDemo } from '../ThreeD/AutoPlayDemo';
 import './Dashboard.css';
 import { METRIC_OPTIONS } from '../../types';
+import { METRIC_COLOR_SCHEMES } from '../../utils/chartTheme';
 import type { FlowLine, MetricKey } from '../../types';
 
 const REGION_FLOWS: Record<string, FlowLine[]> = {
@@ -207,7 +208,7 @@ export default function Dashboard() {
             onSelectProvince={handleSelectProvince}
             onHoverProvince={setHoveredProvince}
           />
-          <MapLegend min={metricRange.min} max={metricRange.max} label={metricRange.label} />
+          <MapLegend min={metricRange.min} max={metricRange.max} label={metricRange.label} colors={METRIC_COLOR_SCHEMES[selectedMetric]} />
         </main>
         <RightPanel
           allData={allData}

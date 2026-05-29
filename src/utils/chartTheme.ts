@@ -14,17 +14,18 @@ export const MORANDI_GOLD = '#D4B896';
 export const MORANDI_SILVER = '#B0BEC5';
 export const MORANDI_HIGHLIGHT = '#D4CDA0';
 
+// 莫兰迪色阶：低值→浅淡 | 高值→深浓，区分度明显
 export const METRIC_COLOR_SCHEMES: Record<string, [string, string, string]> = {
-  gdp: ['#D4CFC7', '#B0BEC5', '#C4A88B'],
-  gdpPerCapita: ['#D4CFC7', '#B0BEC5', '#C4A88B'],
-  gdpGrowth: ['#C5D3C0', '#B0BEC5', '#D4B5B5'],
-  population: ['#D4CFC7', '#B8B0C4', '#8E9CAF'],
-  primaryIndustry: ['#D4CFC7', '#C4C0D4', '#A8A0B8'],
-  secondaryIndustry: ['#D4CFC7', '#C4C0D4', '#A8A0B8'],
-  tertiaryIndustry: ['#D4CFC7', '#C4C0D4', '#A8A0B8'],
-  retailSales: ['#D4CFC7', '#B5C4B1', '#C4A88B'],
-  perCapitaIncome: ['#D4CFC7', '#B0BEC5', '#D4B896'],
-  urbanizationRate: ['#D4CFC7', '#B8B0C4', '#8E9CAF'],
+  gdp:              ['#EDE5DB', '#C4A88B', '#8C6E5A'],  // 暖棕：浅米→莫兰迪棕→深咖
+  gdpPerCapita:     ['#ECE4D8', '#C4A88B', '#8C6E5A'],  // 同上
+  gdpGrowth:        ['#E4EBE3', '#9AB89A', '#5C7A5E'],  // 莫兰迪绿：浅绿→灰绿→深绿
+  population:       ['#E5E5EC', '#8E9CAF', '#5C6D85'],  // 灰蓝：浅灰蓝→莫兰迪蓝→深蓝灰
+  primaryIndustry:  ['#E8EDE4', '#A3B8A1', '#6B8A6E'],  // 植物绿：浅草→灰绿→暗绿
+  secondaryIndustry:['#E7E5EC', '#9C94B2', '#6B6285'],  // 薰衣草紫：浅紫→莫兰迪紫→深紫
+  tertiaryIndustry: ['#EDE5E8', '#C4A4A4', '#8C6E6E'],  // 灰玫瑰：浅粉→莫兰迪粉→深玫瑰
+  retailSales:      ['#ECE6DA', '#C4A88B', '#946B52'],  // 陶土橙：浅米→莫兰迪橙→深陶土
+  perCapitaIncome:  ['#ECE5D8', '#D4B896', '#A67C52'],  // 琥珀金：浅金→莫兰迪金→深琥珀
+  urbanizationRate: ['#E5E7EC', '#8E9CAF', '#4B6078'],  // 石板蓝：浅灰→莫兰迪蓝→深石板
 };
 
 export const morandiChartTheme = {

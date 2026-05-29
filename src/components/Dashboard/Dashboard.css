@@ -58,6 +58,7 @@ html, body, #root {
 .dashboard-center {
   position: relative;
   overflow: hidden;
+  background: #F7F4EE;
 }
 
 /* ===== TopBar ===== */
@@ -1058,20 +1059,25 @@ html, body, #root {
   left: 12px;
   bottom: 40px;
   width: 180px;
-  padding: 8px;
-  border: 1px solid var(--border-color);
+  padding: 8px 10px;
+  border: 1px solid rgba(0,0,0,0.08);
   border-radius: 8px;
-  background: rgba(26,31,46,0.75);
-  color: var(--text-muted);
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(4px);
+  color: #8C8A84;
   font-size: 10px;
   pointer-events: none;
 }
 
-.legend-scale {
-  height: 8px;
+.legend-gradient-bar {
+  height: 10px;
   margin: 6px 0 4px;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--morandi-greige), var(--morandi-blue), var(--morandi-terra));
+}
+
+.legend-label {
+  font-weight: 500;
+  color: #6B6862;
 }
 
 .legend-values {

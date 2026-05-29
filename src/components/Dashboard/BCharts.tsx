@@ -71,11 +71,12 @@ export function OverviewCards({ allData, selectedYear }: { allData: ProvinceEcon
   );
 }
 
-export function MapLegend({ min, max, label }: { min: number; max: number; label: string }) {
+export function MapLegend({ min, max, label, colors }: { min: number; max: number; label: string; colors: [string, string, string] }) {
+  const gradient = `linear-gradient(to right, ${colors[0]} 0%, ${colors[1]} 50%, ${colors[2]} 100%)`;
   return (
     <div className="map-legend">
-      <span>{label}</span>
-      <div className="legend-scale" />
+      <span className="legend-label">{label}</span>
+      <div className="legend-gradient-bar" style={{ background: gradient }} />
       <div className="legend-values">
         <small>{fmt(min, 1)}</small>
         <small>{fmt(max, 1)}</small>
