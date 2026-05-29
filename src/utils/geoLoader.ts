@@ -15,7 +15,7 @@ export async function loadChinaGeoJSON(): Promise<any> {
   loadingPromise = (async () => {
     // 先尝试本地文件
     try {
-      const resp = await fetch('/src/data/china_geo.json');
+      const resp = await fetch(import.meta.env.BASE_URL + 'data/china_geo.json');
       if (resp.ok) {
         cachedGeoJSON = await resp.json();
         return cachedGeoJSON;
