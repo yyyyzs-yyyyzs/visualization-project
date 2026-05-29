@@ -50,7 +50,9 @@ export default function Dashboard() {
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const [showFlows, setShowFlows] = useState(false);
   const [panelState, setPanelState] = useState<PanelState>('intro');
+  const [rightPanelWidth, setRightPanelWidth] = useState(320);
   const playTimerRef = useRef<number | null>(null);
+  const isDragging = useRef(false);
 
   useEffect(() => {
     if (years.length && !years.includes(selectedYear)) setSelectedYear(years[years.length - 1]);
@@ -182,10 +184,36 @@ export default function Dashboard() {
     else startDemo();
   }, [isDemoPlaying, startDemo, stopDemo]);
 
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isDragging.current = true;
+    const startX = e.clientX;
+    const startWidth = rightPanelWidth;
+
+    const onMouseMove = (ev: MouseEvent) => {
+      const delta = startX - ev.clientX;
+      const newWidth = Math.min(620, Math.max(280, startWidth + delta));
+      setRightPanelWidth(newWidth);
+    };
+
+    const onMouseUp = () => {
+      isDragging.current = false;
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, [rightPanelWidth]);
+
   return (
     <div className="dashboard">
       <TopBar selectedYear={selectedYear} selectedMetric={selectedMetric} isDemoPlaying={isDemoPlaying} onToggleDemo={handleToggleDemo} {...stats} />
-      <div className="dashboard-main">
+      <div className="dashboard-main" style={{ gridTemplateColumns: `240px 1fr ${rightPanelWidth}px` }}>
         <LeftPanel
           allData={allData}
           selectedYear={selectedYear}
@@ -210,6 +238,10 @@ export default function Dashboard() {
           />
           <MapLegend min={metricRange.min} max={metricRange.max} label={metricRange.label} colors={METRIC_COLOR_SCHEMES[selectedMetric]} />
         </main>
+        <div
+          className="resize-handle"
+          onMouseDown={handleResizeStart}
+        />
         <RightPanel
           allData={allData}
           panelState={panelState}

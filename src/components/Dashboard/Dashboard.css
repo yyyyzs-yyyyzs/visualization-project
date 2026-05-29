@@ -61,6 +61,37 @@ html, body, #root {
   background: #F7F4EE;
 }
 
+.resize-handle {
+  width: 6px;
+  cursor: ew-resize;
+  background: transparent;
+  transition: background 0.2s;
+  position: relative;
+  z-index: 20;
+  flex-shrink: 0;
+}
+
+.resize-handle:hover,
+.resize-handle:active {
+  background: rgba(196, 168, 139, 0.4);
+}
+
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 1px;
+  height: 40px;
+  background: rgba(196, 191, 182, 0.3);
+  border-radius: 1px;
+  transition: background 0.2s;
+}
+
+.resize-handle:hover::after {
+  background: var(--morandi-terra);
+}
+
 /* ===== TopBar ===== */
 .topbar {
   display: flex;
