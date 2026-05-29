@@ -2,7 +2,7 @@ import ReactECharts from 'echarts-for-react';
 import { useMemo } from 'react';
 import type { ProvinceEconomy, MetricKey } from '../../types';
 import { REGIONS } from '../../types';
-import { MORANDI_PALETTE, withChartDefaults } from '../../utils/chartTheme';
+import { MORANDI_PALETTE } from '../../utils/chartTheme';
 import { kde } from '../../utils/statistics';
 
 interface ScatterMatrixProps {
@@ -171,7 +171,7 @@ export default function ScatterMatrix({ allData, year, height = 520 }: ScatterMa
 
   return (
     <div className="chart-card">
-      <ReactECharts option={withChartDefaults(option) as never} style={{ height, width: '100%' }} notMerge lazyUpdate />
+      <ReactECharts option={option as never} style={{ height, width: '100%' }} notMerge lazyUpdate />
     </div>
   );
 }
