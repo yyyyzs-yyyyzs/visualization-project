@@ -1,4 +1,5 @@
 import ReactECharts from 'echarts-for-react';
+import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
 import type { MetricKey, ProvinceEconomy } from '../../types';
 import { METRIC_OPTIONS, REGIONS } from '../../types';
 import {
@@ -13,10 +14,55 @@ import {
   withChartDefaults,
 } from '../../utils/chartTheme';
 
+// ===== 图表放大弹窗 Context =====
+interface ChartModalState {
+  option: Record<string, unknown>;
+  title: string;
+}
+const ChartModalCtx = createContext<{
+  open: (state: ChartModalState) => void;
+  close: () => void;
+} | null>(null);
+
+export function ChartModalProvider({ children }: { children: ReactNode }) {
+  const [state, setState] = useState<ChartModalState | null>(null);
+  const open = useCallback((s: ChartModalState) => setState(s), []);
+  const close = useCallback(() => setState(null), []);
+  return (
+    <ChartModalCtx.Provider value={{ open, close }}>
+      {children}
+      {state && (
+        <div className="chart-modal-overlay" onClick={close}>
+          <div className="chart-modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className="chart-modal-header">
+              <span>{state.title}</span>
+              <button className="chart-modal-close" onClick={close}>✕</button>
+            </div>
+            <ReactECharts
+              option={withChartDefaults(state.option) as never}
+              style={{ height: 'calc(100vh - 120px)', width: '100%' }}
+              notMerge
+              lazyUpdate
+            />
+          </div>
+        </div>
+      )}
+    </ChartModalCtx.Provider>
+  );
+}
+
+function useChartModal() {
+  const ctx = useContext(ChartModalCtx);
+  if (!ctx) throw new Error('useChartModal must be used inside ChartModalProvider');
+  return ctx;
+}
+
+// ===== 基础类型 =====
 type ChartProps = {
   option: Record<string, unknown>;
   height?: number;
   className?: string;
+  modalTitle?: string;
 };
 
 const fmt = (value: number, digits = 0) =>
@@ -24,9 +70,15 @@ const fmt = (value: number, digits = 0) =>
 
 const metricLabel = (key: MetricKey) => METRIC_OPTIONS.find((item) => item.key === key)?.label ?? key;
 
-function Chart({ option, height = 190, className }: ChartProps) {
+function Chart({ option, height = 190, className, modalTitle }: ChartProps) {
+  const modal = useChartModal();
   return (
-    <div className={`chart-card ${className ?? ''}`}>
+    <div
+      className={`chart-card ${className ?? ''}`}
+      onClick={() => modal.open({ option, title: modalTitle ?? '图表' })}
+      title="点击放大"
+      style={{ cursor: 'pointer' }}
+    >
       <ReactECharts option={withChartDefaults(option) as never} style={{ height, width: '100%' }} notMerge lazyUpdate />
     </div>
   );
@@ -165,7 +217,7 @@ export function ProvinceDetailPanel({
         <div><strong>{row.gdpGrowth.toFixed(1)}%</strong><span>GDP增速</span></div>
         <div><strong>{row.tertiaryIndustry ? ((row.tertiaryIndustry / row.gdp) * 100).toFixed(1) : '0.0'}%</strong><span>三产占比</span></div>
       </div>
-      <Chart
+      <Chart modalTitle={`${province} GDP总量趋势`}
         option={{
           title: { text: '图表1 GDP总量趋势' },
           xAxis: { type: 'category', data: years, ...axisStyle },
@@ -173,7 +225,7 @@ export function ProvinceDetailPanel({
           series: [{ type: 'line', smooth: true, data: trend.map((item) => item.gdp), areaStyle: { opacity: 0.18 }, lineStyle: { color: MORANDI_TERRA, width: 2 }, itemStyle: { color: MORANDI_TERRA }, markPoint: { data: [{ type: 'max', name: '最高' }, { type: 'min', name: '最低' }] } }],
         }}
       />
-      <Chart
+      <Chart modalTitle={`${province} 人均GDP趋势`}
         option={{
           title: { text: '图表2 人均GDP趋势' },
           xAxis: { type: 'category', data: years, ...axisStyle },
@@ -184,7 +236,7 @@ export function ProvinceDetailPanel({
           ],
         }}
       />
-      <Chart
+      <Chart modalTitle={`${province} GDP增速`}
         option={{
           title: { text: '图表3 GDP增速柱状图' },
           xAxis: { type: 'category', data: years, ...axisStyle },
@@ -192,8 +244,7 @@ export function ProvinceDetailPanel({
           series: [{ type: 'bar', barWidth: '55%', data: trend.map((item) => ({ value: item.gdpGrowth, itemStyle: { color: item.gdpGrowth >= 0 ? MORANDI_GREEN : MORANDI_ROSE, borderRadius: [4, 4, 0, 0] }, label: { show: true, position: 'top', formatter: '{c}%' } })), markLine: { data: [{ yAxis: 0 }], lineStyle: { type: 'dashed' } } }],
         }}
       />
-      <Chart
-        height={210}
+      <Chart modalTitle={`${province} 三次产业结构`} height={210}
         option={{
           title: { text: '图表4 三次产业结构' },
           tooltip: { trigger: 'item' },
@@ -201,7 +252,7 @@ export function ProvinceDetailPanel({
           graphic: { type: 'text', left: 'center', top: '50%', style: { text: `三产\n${((row.tertiaryIndustry / row.gdp) * 100).toFixed(1)}%`, fill: '#EDE8DC', fontSize: 16, fontWeight: 700 } },
         }}
       />
-      <Chart
+      <Chart modalTitle={`${province} vs 全国均值`}
         option={{
           title: { text: '图表5 本省 vs 全国均值' },
           legend: { data: [province, '全国均值'] },
@@ -210,8 +261,7 @@ export function ProvinceDetailPanel({
           series: [{ name: province, type: 'bar', data: indicators.map(([, value]) => value), itemStyle: { color: MORANDI_TERRA } }, { name: '全国均值', type: 'bar', data: indicators.map(([, , value]) => value), itemStyle: { color: MORANDI_BLUE, opacity: 0.75 } }],
         }}
       />
-      <Chart
-        height={160}
+      <Chart modalTitle={`${province} GDP占全国比重`} height={160}
         option={{
           title: { text: '图表6 GDP占全国比重' },
           tooltip: { trigger: 'item' },
@@ -261,12 +311,12 @@ export function ProvinceComparePanel({
         {provinces.map((name) => <span key={name} className="compare-tag">{name}<button onClick={() => onRemoveCompare(name)}>×</button></span>)}
       </div>
       {provinces.length < 2 && <p className="compare-hint">请选择至少 2 个省份进行对比，最多支持 4 个。</p>}
-      <Chart option={{ title: { text: '图表1 多线GDP对比' }, legend: { data: provinces }, xAxis: { type: 'category', data: years, ...axisStyle }, yAxis: { type: 'value', name: '亿元', ...axisStyle }, series: seriesData.map((rows, i) => ({ name: provinces[i], type: 'line', smooth: true, data: rows.map((item) => item.gdp) })) }} />
-      <Chart option={{ title: { text: '图表2 多线人均GDP对比' }, legend: { data: provinces }, xAxis: { type: 'category', data: years, ...axisStyle }, yAxis: { type: 'value', name: '元/人', ...axisStyle }, series: seriesData.map((rows, i) => ({ name: provinces[i], type: 'line', smooth: true, data: rows.map((item) => item.gdpPerCapita) })) }} />
-      <Chart option={{ title: { text: '图表3 当年关键指标分组柱状图' }, legend: { data: provinces }, xAxis: { type: 'category', data: ['GDP', '人均GDP', '增速', '人口', '三产占比', '城镇化'], ...axisStyle }, yAxis: { type: 'value', ...axisStyle }, series: currentRows.map((row) => ({ name: row.provinceName, type: 'bar', data: [row.gdp, row.gdpPerCapita, row.gdpGrowth, row.population, (row.tertiaryIndustry / row.gdp) * 100, row.urbanizationRate] })) }} />
-      <Chart height={230} option={{ title: { text: '图表4 六维雷达图' }, tooltip: {}, radar: { indicator: [{ name: 'GDP', max: 140000 }, { name: '人均GDP', max: 210000 }, { name: '增速', max: 9 }, { name: '人口', max: 13000 }, { name: '三产', max: 75 }, { name: '城镇化', max: 90 }], axisName: { color: '#B8B2A6' }, splitLine: { lineStyle: { color: 'rgba(196,191,182,0.15)' } }, splitArea: { areaStyle: { color: ['rgba(196,191,182,0.02)', 'rgba(196,191,182,0.05)'] } } }, series: [{ type: 'radar', data: currentRows.map((row) => ({ name: row.provinceName, value: [row.gdp, row.gdpPerCapita, row.gdpGrowth, row.population, (row.tertiaryIndustry / row.gdp) * 100, row.urbanizationRate] })) }] }} />
-      <Chart option={{ title: { text: '图表5 产业结构堆叠柱状图' }, legend: { data: ['一产', '二产', '三产'] }, xAxis: { type: 'category', data: currentRows.map((row) => row.provinceName), ...axisStyle }, yAxis: { type: 'value', name: '亿元', ...axisStyle }, series: ['primaryIndustry', 'secondaryIndustry', 'tertiaryIndustry'].map((key, i) => ({ name: ['一产', '二产', '三产'][i], type: 'bar', stack: 'industry', data: currentRows.map((row) => row[key as MetricKey]) })) }} />
-      <Chart option={{ title: { text: '图表6 增速对比+全国平均' }, legend: { data: [...provinces, '全国平均'] }, xAxis: { type: 'category', data: years, ...axisStyle }, yAxis: { type: 'value', name: '%', ...axisStyle }, series: [...seriesData.map((rows, i) => ({ name: provinces[i], type: 'bar', data: rows.map((item) => item.gdpGrowth) })), { name: '全国平均', type: 'line', data: national.map((item) => item.gdpGrowth), lineStyle: { type: 'dashed', color: MORANDI_GOLD } }] }} />
+      <Chart modalTitle="多线GDP对比" option={{ title: { text: '图表1 多线GDP对比' }, legend: { data: provinces }, xAxis: { type: 'category', data: years, ...axisStyle }, yAxis: { type: 'value', name: '亿元', ...axisStyle }, series: seriesData.map((rows, i) => ({ name: provinces[i], type: 'line', smooth: true, data: rows.map((item) => item.gdp) })) }} />
+      <Chart modalTitle="多线人均GDP对比" option={{ title: { text: '图表2 多线人均GDP对比' }, legend: { data: provinces }, xAxis: { type: 'category', data: years, ...axisStyle }, yAxis: { type: 'value', name: '元/人', ...axisStyle }, series: seriesData.map((rows, i) => ({ name: provinces[i], type: 'line', smooth: true, data: rows.map((item) => item.gdpPerCapita) })) }} />
+      <Chart modalTitle="关键指标分组柱状图" option={{ title: { text: '图表3 当年关键指标分组柱状图' }, legend: { data: provinces }, xAxis: { type: 'category', data: ['GDP', '人均GDP', '增速', '人口', '三产占比', '城镇化'], ...axisStyle }, yAxis: { type: 'value', ...axisStyle }, series: currentRows.map((row) => ({ name: row.provinceName, type: 'bar', data: [row.gdp, row.gdpPerCapita, row.gdpGrowth, row.population, (row.tertiaryIndustry / row.gdp) * 100, row.urbanizationRate] })) }} />
+      <Chart modalTitle="六维雷达图" height={230} option={{ title: { text: '图表4 六维雷达图' }, tooltip: {}, radar: { indicator: [{ name: 'GDP', max: 140000 }, { name: '人均GDP', max: 210000 }, { name: '增速', max: 9 }, { name: '人口', max: 13000 }, { name: '三产', max: 75 }, { name: '城镇化', max: 90 }], axisName: { color: '#B8B2A6' }, splitLine: { lineStyle: { color: 'rgba(196,191,182,0.15)' } }, splitArea: { areaStyle: { color: ['rgba(196,191,182,0.02)', 'rgba(196,191,182,0.05)'] } } }, series: [{ type: 'radar', data: currentRows.map((row) => ({ name: row.provinceName, value: [row.gdp, row.gdpPerCapita, row.gdpGrowth, row.population, (row.tertiaryIndustry / row.gdp) * 100, row.urbanizationRate] })) }] }} />
+      <Chart modalTitle="产业结构堆叠柱状图" option={{ title: { text: '图表5 产业结构堆叠柱状图' }, legend: { data: ['一产', '二产', '三产'] }, xAxis: { type: 'category', data: currentRows.map((row) => row.provinceName), ...axisStyle }, yAxis: { type: 'value', name: '亿元', ...axisStyle }, series: ['primaryIndustry', 'secondaryIndustry', 'tertiaryIndustry'].map((key, i) => ({ name: ['一产', '二产', '三产'][i], type: 'bar', stack: 'industry', data: currentRows.map((row) => row[key as MetricKey]) })) }} />
+      <Chart modalTitle="增速对比+全国平均" option={{ title: { text: '图表6 增速对比+全国平均' }, legend: { data: [...provinces, '全国平均'] }, xAxis: { type: 'category', data: years, ...axisStyle }, yAxis: { type: 'value', name: '%', ...axisStyle }, series: [...seriesData.map((rows, i) => ({ name: provinces[i], type: 'bar', data: rows.map((item) => item.gdpGrowth) })), { name: '全国平均', type: 'line', data: national.map((item) => item.gdpGrowth), lineStyle: { type: 'dashed', color: MORANDI_GOLD } }] }} />
     </div>
   );
 }
@@ -300,9 +350,9 @@ export function RegionAnalysisPanel({
         <div><strong>{fmt((totalGdp * 10000) / totalPopulation)}</strong><span>人均GDP/元</span></div>
         <div><strong>{provinces.length}</strong><span>省份数</span></div>
       </div>
-      <Chart option={{ title: { text: '图表2 区域内部省份排名' }, xAxis: { type: 'value', ...axisStyle }, yAxis: { type: 'category', data: [...rows].sort((a, b) => a.gdp - b.gdp).map((row) => row.provinceName), ...axisStyle }, series: [{ type: 'bar', data: [...rows].sort((a, b) => a.gdp - b.gdp).map((row) => row.gdp), itemStyle: { color: region?.color ?? MORANDI_TERRA } }] }} />
-      <Chart height={210} option={{ title: { text: '图表3 区域产业结构' }, tooltip: { trigger: 'item' }, series: [{ type: 'pie', radius: ['45%', '70%'], data: [{ name: '第一产业', value: rows.reduce((s, d) => s + d.primaryIndustry, 0) }, { name: '第二产业', value: rows.reduce((s, d) => s + d.secondaryIndustry, 0) }, { name: '第三产业', value: rows.reduce((s, d) => s + d.tertiaryIndustry, 0) }], color: [MORANDI_GREEN, MORANDI_BLUE, MORANDI_LAVENDER], label: { color: '#EDE8DC', formatter: '{b} {d}%' } }] }} />
-      <Chart option={{ title: { text: '图表4 区域GDP趋势 vs 全国趋势' }, legend: { data: [region?.name ?? '区域', '全国'] }, xAxis: { type: 'category', data: years, ...axisStyle }, yAxis: { type: 'value', name: '亿元', ...axisStyle }, series: [{ name: region?.name ?? '区域', type: 'line', smooth: true, data: regionTrend, areaStyle: { opacity: 0.16 } }, { name: '全国', type: 'line', smooth: true, data: nationalTrend, lineStyle: { type: 'dashed' } }] }} />
+      <Chart modalTitle="区域内部省份排名" option={{ title: { text: '图表2 区域内部省份排名' }, xAxis: { type: 'value', ...axisStyle }, yAxis: { type: 'category', data: [...rows].sort((a, b) => a.gdp - b.gdp).map((row) => row.provinceName), ...axisStyle }, series: [{ type: 'bar', data: [...rows].sort((a, b) => a.gdp - b.gdp).map((row) => row.gdp), itemStyle: { color: region?.color ?? MORANDI_TERRA } }] }} />
+      <Chart modalTitle="区域产业结构" height={210} option={{ title: { text: '图表3 区域产业结构' }, tooltip: { trigger: 'item' }, series: [{ type: 'pie', radius: ['45%', '70%'], data: [{ name: '第一产业', value: rows.reduce((s, d) => s + d.primaryIndustry, 0) }, { name: '第二产业', value: rows.reduce((s, d) => s + d.secondaryIndustry, 0) }, { name: '第三产业', value: rows.reduce((s, d) => s + d.tertiaryIndustry, 0) }], color: [MORANDI_GREEN, MORANDI_BLUE, MORANDI_LAVENDER], label: { color: '#EDE8DC', formatter: '{b} {d}%' } }] }} />
+      <Chart modalTitle="区域GDP趋势 vs 全国趋势" option={{ title: { text: '图表4 区域GDP趋势 vs 全国趋势' }, legend: { data: [region?.name ?? '区域', '全国'] }, xAxis: { type: 'category', data: years, ...axisStyle }, yAxis: { type: 'value', name: '亿元', ...axisStyle }, series: [{ name: region?.name ?? '区域', type: 'line', smooth: true, data: regionTrend, areaStyle: { opacity: 0.16 } }, { name: '全国', type: 'line', smooth: true, data: nationalTrend, lineStyle: { type: 'dashed' } }] }} />
     </div>
   );
 }
